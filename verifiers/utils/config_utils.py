@@ -26,6 +26,7 @@ def get_default_grpo_config(run_name: str, num_gpus: int = 1, output_dir: str = 
         vllm_gpu_memory_utilization=0.7 if num_gpus > 1 else 0.3,
         logging_steps=1,
         log_on_each_node=False,
+        log_completions=True,
         report_to="wandb",
     )
 
