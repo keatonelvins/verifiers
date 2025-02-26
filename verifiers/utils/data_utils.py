@@ -84,5 +84,69 @@ def preprocess_dataset(dataset_name: str = "gsm8k",
             "answer": x["answerKey"]
         })
         return dataset
+    elif dataset_name == "mm":
+        dataset: Dataset = load_dataset("keatone/mm_rl") # type: ignore
+        dataset = dataset.map(lambda x: {
+            "prompt": x["prompt"],
+            "answer": x["answer"]
+        })
+        return dataset
     else:
         raise ValueError(f"Dataset {dataset_name} not supported for preprocess_dataset.")
+    
+def make_hashable(item):
+    """Convert nested lists/dicts into hashable tuples with consistent ordering."""
+    if isinstance(item, dict):
+        # Sort dictionary items and make values hashable
+        return tuple(sorted((k, make_hashable(v)) for k, v in item.items()))
+    elif isinstance(item, list):
+        # Sort the hashable versions of list items for consistent ordering
+        hashable_items = [make_hashable(i) for i in item]
+        if all(isinstance(x, dict) for x in item):
+            # For lists of dictionaries, sort by their hashable representation
+            return tuple(sorted(hashable_items))
+        return tuple(hashable_items)
+    return item
+
+def compare_dict(response_dict: Dict[str, Any], truth_dict: Dict[str, Any]) -> bool:
+    """
+    Compares two dictionaries and returns a boolean value.
+    Handles nested dictionaries and lists, sorting them before comparison.
+    """
+    if len(response_dict) != len(truth_dict):
+        print(f"Length mismatch: {len(response_dict)} != {len(truth_dict)}")
+        return False
+    
+    # Convert keys to sets for order-independent comparison
+    if set(response_dict.keys()) != set(truth_dict.keys()):
+        print(f"Key mismatch: {set(response_dict.keys())} != {set(truth_dict.keys())}")
+        return False
+    
+    for key in response_dict:
+        response_val = response_dict[key]
+        truth_val = truth_dict[key]
+        
+        # Handle nested dictionaries
+        if isinstance(response_val, dict) and isinstance(truth_val, dict):
+            if not compare_dict(response_val, truth_val):
+                print(f"Nested dict mismatch: {response_val} != {truth_val}")
+                return False
+        # Handle lists by comparing elements individually if not sortable
+        elif isinstance(response_val, list) and isinstance(truth_val, list):
+            if len(response_val) != len(truth_val):
+                print(f"List length mismatch: {len(response_val)} != {len(truth_val)}")
+                return False
+            
+            # Convert lists to sets for order-independent comparison
+            response_set = set(make_hashable(response_val))
+            truth_set = set(make_hashable(truth_val))
+            
+            if response_set != truth_set:
+                print(f"List mismatch: {response_val} != {truth_val}")
+                return False
+        # Direct comparison for other types
+        elif response_val != truth_val:
+            print(f"Mismatch: {response_val} != {truth_val}")
+            return False
+    
+    return True
