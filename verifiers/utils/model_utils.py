@@ -1,3 +1,4 @@
+import os
 from importlib.util import find_spec
 from typing import Dict, Any, Union, Tuple
 
@@ -15,21 +16,26 @@ def get_model(model_name: str, model_kwargs: Union[Dict[str, Any], None] = None)
             attn_implementation="flash_attention_2",
             use_cache=False,
         )
+    
     if is_liger_available():
         print("Using Liger kernel")
         from liger_kernel.transformers import AutoLigerKernelForCausalLM # type: ignore
+        
         return AutoLigerKernelForCausalLM.from_pretrained(model_name, **model_kwargs)
     else:
         return AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
     
 def get_tokenizer(model_name: str) -> Any:
+    # Set up tokenizer kwargs
+    tokenizer_kwargs = {}
+    
     if "Instruct" in model_name:
-        return AutoTokenizer.from_pretrained(model_name)
+        return AutoTokenizer.from_pretrained(model_name, **tokenizer_kwargs)
     else:
         try:
-            return AutoTokenizer.from_pretrained(model_name + "-Instruct")
+            return AutoTokenizer.from_pretrained(model_name + "-Instruct", **tokenizer_kwargs)
         except Exception:
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_kwargs)
             # check if tokenizer has chat_template attribute
             if hasattr(tokenizer, "chat_template"):
                 return tokenizer

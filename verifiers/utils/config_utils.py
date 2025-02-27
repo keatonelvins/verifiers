@@ -1,25 +1,26 @@
 from trl import GRPOConfig
 
-def get_default_grpo_config(run_name: str, num_gpus: int = 1) -> GRPOConfig:
+def get_default_grpo_config(run_name: str, num_gpus: int = 1, output_dir: str = None) -> GRPOConfig:
     return GRPOConfig(
-        output_dir=f"outputs/{run_name}",
+        output_dir=output_dir if output_dir else f"outputs/{run_name}",
         run_name=run_name,
         learning_rate=2e-6,
         warmup_steps=50,
-        num_train_epochs=1,
+        num_train_epochs=2,
         bf16=True,
         adam_beta1=0.9,
         adam_beta2=0.99,
-        max_grad_norm=0.1,
-        beta=0.04,
-        max_prompt_length=512,
+        max_grad_norm=0.005,
+        beta=0.005,
+        max_prompt_length=16384,
         max_completion_length=1024,
         per_device_train_batch_size=2,
         num_generations=(2 * num_gpus - 2 if num_gpus > 1 else 2),
-        gradient_accumulation_steps=int(16 / num_gpus),
+        gradient_accumulation_steps=int(32 / num_gpus),
         gradient_checkpointing=True,
         save_strategy="epoch",
         save_only_model=True,
+        save_steps=100,
         use_vllm=True,
         vllm_device=f"cuda:{num_gpus-1}",
         vllm_gpu_memory_utilization=0.7 if num_gpus > 1 else 0.3,

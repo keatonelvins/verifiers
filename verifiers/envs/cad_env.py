@@ -2,7 +2,6 @@ from typing import Any, List, Tuple
 
 from datasets import Dataset
 from trl.trainer.grpo_trainer import RewardFunc
-from verifiers.prompts import CAD_PROMPT
 from verifiers.utils import preprocess_dataset
 from verifiers.parsers import XMLParser
 from verifiers.rubrics import CadRubric

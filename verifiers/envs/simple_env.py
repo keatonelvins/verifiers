@@ -56,12 +56,6 @@ class SimpleEnv(Environment):
         
         self.logger.debug(f"Prompt 0 IDs: {states[0]['prompt_ids']} \nlen: {len(states[0]['prompt_ids'])}")
         self.logger.debug(f"Completion 0 IDs: {states[0]['completion_ids']} \nlen: {len(states[0]['completion_ids'])}")
-        self.logger.info(
-            "Prompt 0:\n" +
-            json.dumps(states[0]["messages"][:-1], indent=4) +
-            "\n\nCompletion 0:\n" +
-            json.dumps(states[0]["messages"][-1], indent=4)
-        )
 
         if output_type == "ids":
             return [states[i]["completion_ids"] for i in range(len(states))]

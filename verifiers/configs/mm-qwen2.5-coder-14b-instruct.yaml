@@ -1,0 +1,10 @@
+# modal run train.py --config mm-qwen2.5-coder-7b    
+
+script_path: verifiers/examples/cad.py
+script_args:
+  dataset: mm
+  model_name: Qwen/Qwen2.5-Coder-14B-Instruct
+  run_name: mm-qwen2.5-coder-14b-instruct
+  num_gpus: 8
+wandb:
+  project: "mm-grpo"
