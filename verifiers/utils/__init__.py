@@ -1,4 +1,4 @@
-from .data_utils import extract_boxed_answer, extract_hash_answer, preprocess_dataset, compare_dict
+from .data_utils import extract_boxed_answer, extract_hash_answer, preprocess_dataset, compare_command
 from .config_utils import get_default_grpo_config
 from .model_utils import get_model, get_tokenizer, get_model_and_tokenizer
 from .logging_utils import setup_logging
@@ -12,5 +12,5 @@ __all__ = [
     "get_tokenizer",
     "get_model_and_tokenizer",
     "setup_logging",
-    "compare_dict"
+    "compare_command"
 ]

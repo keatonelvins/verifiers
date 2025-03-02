@@ -1,9 +1,10 @@
 import re
 import json
+import math
 from typing import List, Dict, Any
 from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
-from verifiers.utils import compare_dict
+from verifiers.utils import compare_command
 from verifiers.bloblang.commands import CamferCommand
 import logging
 
@@ -14,7 +15,7 @@ class CadRubric:
 
         def correctness_reward_func(completions, answer, **kwargs) -> List[float]:
             responses = [self.parser.parse(c[0]['content']).action for c in completions]
-            
+
             def compute_reward(response: str, ground_truth: str) -> float:
                 try:
                     response_dict = json.loads(response)
@@ -22,21 +23,18 @@ class CadRubric:
                     response_cmd = CamferCommand.model_validate(response_dict)
                     truth_cmd = CamferCommand.model_validate(truth_dict)
 
-                    if response_cmd.root.Name != truth_cmd.root.Name:
-                        return 0.0
-
-                    reward = 0.5
-                    similarity = compare_dict(response_cmd.root.Args.model_dump(), truth_cmd.root.Args.model_dump(), return_similarity=True)
+                    similarity = compare_command(response_cmd.root.model_dump(), truth_cmd.root.model_dump(), return_similarity=True)
                     
-                    self.logger.info(f"\nResponse: \033[33m{json.dumps(response_dict, indent=4)}\033[0m" + 
-                                     f"\nTruth: \033[32m{json.dumps(truth_dict, indent=4)}\033[0m" + 
-                                     f"\nSimilarity: \033[34m{similarity}\033[0m")
+                    # self.logger.info(f"\nResponse: \033[33m{json.dumps(response_dict, indent=4)}\033[0m" + 
+                    #                  f"\nTruth: \033[32m{json.dumps(truth_dict, indent=4)}\033[0m" + 
+                    #                  f"\nSimilarity: \033[34m{similarity}\033[0m")
 
-                    reward += 2.0 * similarity
+                    # Goes from 0 to 3 as similarity goes from 0 to 1
+                    reward = 3 * (similarity**1.5)
                     return reward
 
                 except Exception:
-                    return -0.1
+                    return 0.0
 
             return [compute_reward(r, a) for r, a in zip(responses, answer)]
 

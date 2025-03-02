@@ -20,7 +20,7 @@ from trl.trainer.utils import pad
 
 from verifiers.envs.environment import Environment
 from verifiers.imports import SamplingParams
-from verifiers.utils.logging_utils import print_prompt_completions_sample
+from verifiers.utils.logging_utils import print_prompt_completions_sample, print_thought_completion_truth_reward_sample
 
 if is_peft_available():
     from peft import PeftConfig # type: ignore
@@ -68,6 +68,7 @@ class GRPOEnvTrainer(GRPOTrainer):
     ) -> dict[str, Union[torch.Tensor, Any]]:
         device = self.accelerator.device
         prompts = [x["prompt"] for x in inputs] # type: ignore
+        answers = [x["answer"] for x in inputs] # type: ignore
         prompts_text = [maybe_apply_chat_template(example, self.processing_class)["prompt"] for example in inputs] # type: ignore
         prompt_inputs = self.processing_class(
             prompts_text, return_tensors="pt", padding=True, padding_side="left", add_special_tokens=False # type: ignore
@@ -198,17 +199,19 @@ class GRPOEnvTrainer(GRPOTrainer):
 
         if self.log_completions and self.state.global_step % self.args.logging_steps == 0:
             prompts_to_log = gather_object(prompts)
+            answers_to_log = gather_object(answers)
             completions_to_log = gather_object(completions)
             rewards_to_log = rewards.tolist()
 
             if self.accelerator.is_main_process:
-
                 if is_rich_available():
-                    print_prompt_completions_sample(
-                        [str(prompts_to_log[0][-1]["content"])],
-                        [completions_to_log[0]],
-                        [rewards_to_log[0]], 
-                        self.state.global_step,
+                    print_thought_completion_truth_reward_sample(
+                        thoughts=[self.env.parser.parse(c[0]['content']).thought for c in completions_to_log],
+                        completions=[self.env.parser.parse(c[0]['content']).action for c in completions_to_log],
+                        truths=answers_to_log,
+                        rewards=rewards_to_log[:len(completions_to_log)],
+                        step=self.state.global_step,
+                        width=160,
                     )
                 if self.args.report_to and "wandb" in self.args.report_to and wandb.run is not None: # type: ignore
                     import pandas as pd
